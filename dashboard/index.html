@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Recursive Cascade</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg:       #030508;
+  --surface:  #080d14;
+  --border:   #0f1923;
+  --accent:   #00ff88;
+  --warn:     #ffaa00;
+  --danger:   #ff4444;
+  --purple:   #8b5cf6;
+  --blue:     #3b82f6;
+  --orange:   #f97316;
+  --cyan:     #06b6d4;
+  --text:     #e2e8f0;
+  --muted:    #3d4a5c;
+  --mono:     'JetBrains Mono', monospace;
+  --sans:     'Space Grotesk', sans-serif;
+}
+
+body {
+  background:  var(--bg);
+  color:       var(--text);
+  font-family: var(--sans);
+  min-height:  100vh;
+  display:     flex;
+  flex-direction: column;
+  overflow:    hidden;
+  height:      100vh;
+}
+
+/* ── HEADER ─────────────────────────────────────── */
+header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         0.75rem 1.5rem;
+  background:      var(--surface);
+  border-bottom:   1px solid var(--border);
+  flex-shrink:     0;
+}
+
+.header-left {
+  display:     flex;
+  align-items: center;
+  gap:         1rem;
+}
+
+/* RC Logo */
+.logo-mark {
+  width:           44px;
+  height:          44px;
+  position:        relative;
+  flex-shrink:     0;
+}
+
+.logo-mark svg {
+  width:  100%;
+  height: 100%;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-size:      1.1rem;
+  font-weight:    700;
+  color:          var(--accent);
+  letter-spacing: 0.12em;
+  font-family:    var(--mono);
+}
+
+.brand-tagline {
+  font-size:  0.6rem;
+  color:      var(--muted);
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+.header-center {
+  display:     flex;
+  align-items: center;
+  gap:         2rem;
+}
+
+.stat-chip {
+  text-align: center;
+}
+
+.stat-label {
+  font-size:  0.55rem;
+  color:      var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--mono);
+}
+
+.stat-value {
+  font-size:   0.85rem;
+  font-weight: 700;
+  color:       var(--text);
+  font-family: var(--mono);
+}
+
+.stat-value.green  { color: var(--accent); }
+.stat-value.yellow { color: var(--warn); }
+
+.header-right {
+  display:     flex;
+  align-items: center;
+  gap:         1rem;
+}
+
+.live-badge {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  font-size:   0.7rem;
+  color:       var(--muted);
+  font-family: var(--mono);
+  border:      1px solid var(--border);
+  padding:     4px 10px;
+  border-radius: 99px;
+}
+
+.live-dot {
+  width:         7px;
+  height:        7px;
+  border-radius: 50%;
+  background:    var(--muted);
+}
+
+.live-dot.on {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation:  livePulse 2s infinite;
+}
+
+@keyframes livePulse {
+  0%,100% { box-shadow: 0 0 8px var(--accent); }
+  50%      { box-shadow: 0 0 3px var(--accent); }
+}
+
+/* ── PRICE TICKER ────────────────────────────────── */
+.ticker {
+  background:    var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding:       0.3rem 1.5rem;
+  display:       flex;
+  align-items:   center;
+  gap:           2rem;
+  flex-shrink:   0;
+}
+
+.ticker-item {
+  display:     flex;
+  align-items: center;
+  gap:         0.5rem;
+  font-family: var(--mono);
+  font-size:   0.72rem;
+}
+
+.ticker-name  { color: var(--muted); }
+.ticker-price { color: var(--text); font-weight: 600; }
+.ticker-change.up   { color: var(--accent); }
+.ticker-change.down { color: var(--danger); }
+
+.ticker-divider {
+  color:     var(--border);
+  font-size: 1rem;
+}
+
+.trace-display {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size:   0.6rem;
+  color:       var(--purple);
+}
+
+/* ── MAIN GRID ───────────────────────────────────── */
+.main {
+  display:  grid;
+  grid-template-columns: 220px 1fr 260px;
+  gap:      0;
+  flex:     1;
+  overflow: hidden;
+}
+
+/* ── LEFT — AGENTS ───────────────────────────────── */
+.agents-panel {
+  border-right:   1px solid var(--border);
+  padding:        1rem;
+  display:        flex;
+  flex-direction: column;
+  gap:            0.75rem;
+  overflow-y:     auto;
+}
+
+.panel-label {
+  font-size:      0.6rem;
+  color:          var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-family:    var(--mono);
+  margin-bottom:  0.25rem;
+}
+
+.agent-card {
+  border-radius: 10px;
+  padding:       0.75rem;
+  border:        1px solid transparent;
+  transition:    all 0.3s ease;
+  position:      relative;
+  overflow:      hidden;
+}
+
+.agent-card::before {
+  content:  '';
+  position: absolute;
+  top:      0; left: 0; right: 0;
+  height:   2px;
+  background: currentColor;
+  opacity:  0.6;
+}
+
+.agent-card.pm       { background: rgba(6,182,212,0.06);   border-color: rgba(6,182,212,0.15);   color: var(--cyan);   }
+.agent-card.research { background: rgba(0,255,136,0.06);   border-color: rgba(0,255,136,0.15);   color: var(--accent); }
+.agent-card.compute  { background: rgba(139,92,246,0.06);  border-color: rgba(139,92,246,0.15);  color: var(--purple); }
+.agent-card.report   { background: rgba(249,115,22,0.06);  border-color: rgba(249,115,22,0.15);  color: var(--orange); }
+
+.agent-card.active.pm       { border-color: var(--cyan);   box-shadow: 0 0 20px rgba(6,182,212,0.2);   }
+.agent-card.active.research { border-color: var(--accent); box-shadow: 0 0 20px rgba(0,255,136,0.2);   }
+.agent-card.active.compute  { border-color: var(--purple); box-shadow: 0 0 20px rgba(139,92,246,0.2);  }
+.agent-card.active.report   { border-color: var(--orange); box-shadow: 0 0 20px rgba(249,115,22,0.2);  }
+
+.agent-card.done.pm       { border-color: rgba(6,182,212,0.4);   }
+.agent-card.done.research { border-color: rgba(0,255,136,0.4);   }
+.agent-card.done.compute  { border-color: rgba(139,92,246,0.4);  }
+.agent-card.done.report   { border-color: rgba(249,115,22,0.4);  }
+
+.agent-top {
+  display:     flex;
+  align-items: center;
+  gap:         0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.agent-icon  { font-size: 1.1rem; }
+.agent-name  { font-size: 0.75rem; font-weight: 700; color: var(--text); }
+
+.agent-fee {
+  font-family: var(--mono);
+  font-size:   0.65rem;
+  color:       currentColor;
+  opacity:     0.8;
+  margin-bottom: 0.4rem;
+}
+
+.agent-status {
+  font-size:   0.65rem;
+  color:       var(--muted);
+  font-family: var(--mono);
+}
+
+.agent-card.active .agent-status { color: currentColor; }
+.agent-card.done   .agent-status { color: var(--accent); }
+
+/* proof chain */
+.proof-link {
+  text-align:  center;
+  font-size:   0.65rem;
+  color:       var(--muted);
+  padding:     0.1rem 0;
+  font-family: var(--mono);
+  transition:  color 0.3s;
+}
+
+.proof-link.verified { color: var(--accent); }
+
+/* ── CENTER — LIVE LOGS ───────────────────────────── */
+.log-panel {
+  display:        flex;
+  flex-direction: column;
+  border-right:   1px solid var(--border);
+  overflow:       hidden;
+}
+
+.log-header {
+  padding:         0.6rem 1rem;
+  border-bottom:   1px solid var(--border);
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  flex-shrink:     0;
+  background:      var(--surface);
+}
+
+.log-body {
+  flex:       1;
+  overflow-y: auto;
+  padding:    0.75rem 1rem;
+  display:    flex;
+  flex-direction: column;
+  gap:        0.3rem;
+}
+
+.log-entry {
+  display:     flex;
+  gap:         0.75rem;
+  align-items: flex-start;
+  animation:   logIn 0.3s ease;
+  padding:     0.3rem 0.5rem;
+  border-radius: 4px;
+}
+
+@keyframes logIn {
+  from { opacity:0; transform: translateX(-8px); }
+  to   { opacity:1; transform: translateX(0); }
+}
+
+.log-time {
+  font-family: var(--mono);
+  font-size:   0.65rem;
+  color:       var(--muted);
+  min-width:   60px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+/* BOLD READABLE LOG MESSAGE */
+.log-msg {
+  font-family: var(--mono);
+  font-size:   0.85rem;
+  font-weight: 700;
+  line-height: 1.5;
+  word-break:  break-word;
+  flex:        1;
+}
+
+.log-entry.pm      .log-msg { color: var(--cyan);   }
+.log-entry.chain   .log-msg { color: #a78bfa;        }
+.log-entry.agent   .log-msg { color: var(--accent);  }
+.log-entry.x402    .log-msg { color: var(--warn);    }
+.log-entry.cascade .log-msg { color: #60a5fa;        }
+.log-entry.success .log-msg { color: var(--accent); font-size: 1rem; }
+.log-entry.payout  .log-msg { color: #f472b6;        }
+.log-entry.error   .log-msg { color: var(--danger);  }
+.log-entry.system  .log-msg { color: #94a3b8;        }
+
+.log-entry.success {
+  background: rgba(0,255,136,0.05);
+  border-left: 3px solid var(--accent);
+  padding-left: 0.75rem;
+}
+
+.log-entry.payout {
+  background: rgba(244,114,182,0.05);
+  border-left: 3px solid #f472b6;
+  padding-left: 0.75rem;
+}
+
+/* ── RIGHT — SETTLEMENT ──────────────────────────── */
+.settlement-panel {
+  display:        flex;
+  flex-direction: column;
+  overflow:       hidden;
+}
+
+.settlement-header {
+  padding:       0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background:    var(--surface);
+  flex-shrink:   0;
+}
+
+.settlement-body {
+  flex:       1;
+  overflow-y: auto;
+  padding:    1rem;
+  display:    flex;
+  flex-direction: column;
+  gap:        0.5rem;
+}
+
+.settlement-empty {
+  text-align:  center;
+  color:       var(--muted);
+  font-size:   0.75rem;
+  font-family: var(--mono);
+  padding:     2rem 0;
+}
+
+.payout-card {
+  border:        1px solid rgba(0,255,136,0.1);
+  border-radius: 8px;
+  padding:       0.75rem;
+  background:    rgba(0,255,136,0.04);
+  display:       flex;
+  justify-content: space-between;
+  align-items:   center;
+  animation:     payIn 0.5s ease;
+}
+
+@keyframes payIn {
+  from { opacity:0; transform: translateX(10px); }
+  to   { opacity:1; transform: translateX(0); }
+}
+
+.payout-name   { font-size: 0.8rem; color: var(--text); font-weight: 600; }
+.payout-amount {
+  font-family: var(--mono);
+  font-size:   1rem;
+  font-weight: 800;
+  color:       var(--accent);
+}
+
+.total-card {
+  border:        1px solid rgba(0,255,136,0.3);
+  border-radius: 8px;
+  padding:       0.75rem;
+  background:    rgba(0,255,136,0.08);
+  display:       flex;
+  justify-content: space-between;
+  align-items:   center;
+  margin-top:    0.25rem;
+}
+
+.total-label  { font-size: 0.75rem; color: var(--muted); font-family: var(--mono); }
+.total-amount {
+  font-family: var(--mono);
+  font-size:   1.3rem;
+  font-weight: 800;
+  color:       var(--accent);
+  text-shadow: 0 0 20px rgba(0,255,136,0.5);
+}
+
+.volume-section {
+  margin-top:    auto;
+  padding-top:   1rem;
+  border-top:    1px solid var(--border);
+}
+
+.volume-label  { font-size: 0.6rem; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.1em; }
+.volume-amount {
+  font-family: var(--mono);
+  font-size:   1rem;
+  font-weight: 700;
+  color:       var(--purple);
+  margin-top:  4px;
+}
+
+/* scrollbar */
+::-webkit-scrollbar       { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* screen flash */
+body.flash {
+  animation: screenFlash 0.8s ease;
+}
+
+@keyframes screenFlash {
+  0%   { box-shadow: inset 0 0 80px rgba(0,255,136,0.3); }
+  100% { box-shadow: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <!-- RC Logo -->
+    <div class="logo-mark">
+      <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="44" height="44" rx="8" fill="#0a1a12"/>
+        <!-- C on top -->
+        <text x="22" y="18" text-anchor="middle" font-family="JetBrains Mono" font-weight="800" font-size="14" fill="#00ff88">C</text>
+        <!-- R on bottom -->
+        <text x="22" y="34" text-anchor="middle" font-family="JetBrains Mono" font-weight="800" font-size="14" fill="#00ff88">R</text>
+        <!-- border glow -->
+        <rect x="1" y="1" width="42" height="42" rx="7" stroke="#00ff88" stroke-width="0.5" opacity="0.4"/>
+      </svg>
+    </div>
+    <div class="brand">
+      <div class="brand-name">RECURSIVE CASCADE</div>
+      <div class="brand-tagline">The First Autonomous Agent Economy on Stellar</div>
+    </div>
+  </div>
+
+  <div class="header-center">
+    <div class="stat-chip">
+      <div class="stat-label">Total Volume</div>
+      <div class="stat-value green" id="totalVolume">0.00 USDC</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-label">Jobs Run</div>
+      <div class="stat-value" id="jobCount">0</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-label">Status</div>
+      <div class="stat-value yellow" id="systemStatus">IDLE</div>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="live-badge">
+      <div class="live-dot" id="liveDot"></div>
+      <span id="liveText">Connecting...</span>
+    </div>
+  </div>
+</header>
+
+<!-- PRICE TICKER -->
+<div class="ticker">
+  <div class="ticker-item">
+    <span class="ticker-name">BTC</span>
+    <span class="ticker-price" id="btcPrice">—</span>
+    <span class="ticker-change" id="btcChange">—</span>
+  </div>
+  <span class="ticker-divider">|</span>
+  <div class="ticker-item">
+    <span class="ticker-name">ETH</span>
+    <span class="ticker-price" id="ethPrice">—</span>
+    <span class="ticker-change" id="ethChange">—</span>
+  </div>
+  <span class="ticker-divider">|</span>
+  <div class="ticker-item">
+    <span class="ticker-name">XLM</span>
+    <span class="ticker-price" id="xlmPrice">—</span>
+    <span class="ticker-change" id="xlmChange">—</span>
+  </div>
+  <div class="trace-display" id="traceDisplay">TRACE: —</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT: AGENTS -->
+  <div class="agents-panel">
+    <div class="panel-label">Agent Network</div>
+
+    <div class="agent-card pm" id="card-pm">
+      <div class="agent-top">
+        <span class="agent-icon">🧠</span>
+        <span class="agent-name">PM Agent</span>
+      </div>
+      <div class="agent-fee">Orchestrator • 0.8 USDC</div>
+      <div class="agent-status" id="status-pm">Idle</div>
+    </div>
+
+    <div class="proof-link" id="proof-1">│</div>
+
+    <div class="agent-card research" id="card-research">
+      <div class="agent-top">
+        <span class="agent-icon">🔍</span>
+        <span class="agent-name">Research Agent</span>
+      </div>
+      <div class="agent-fee">Data Layer • 1.5 USDC</div>
+      <div class="agent-status" id="status-research">Idle</div>
+    </div>
+
+    <div class="proof-link" id="proof-2">│</div>
+
+    <div class="agent-card compute" id="card-compute">
+      <div class="agent-top">
+        <span class="agent-icon">⚙️</span>
+        <span class="agent-name">Compute Agent</span>
+      </div>
+      <div class="agent-fee">Analysis Layer • 1.0 USDC</div>
+      <div class="agent-status" id="status-compute">Idle</div>
+    </div>
+
+    <div class="proof-link" id="proof-3">│</div>
+
+    <div class="agent-card report" id="card-report">
+      <div class="agent-top">
+        <span class="agent-icon">📊</span>
+        <span class="agent-name">Report Agent</span>
+      </div>
+      <div class="agent-fee">Output Layer • 0.7 USDC</div>
+      <div class="agent-status" id="status-report">Idle</div>
+    </div>
+  </div>
+
+  <!-- CENTER: LIVE LOGS -->
+  <div class="log-panel">
+    <div class="log-header">
+      <div class="panel-label">⚡ Live Execution Log</div>
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);">
+        <span id="logCount">0</span> events
+      </div>
+    </div>
+    <div class="log-body" id="logBody"></div>
+  </div>
+
+  <!-- RIGHT: SETTLEMENT -->
+  <div class="settlement-panel">
+    <div class="settlement-header">
+      <div class="panel-label">💰 Cascade Settlement</div>
+    </div>
+    <div class="settlement-body" id="settlementBody">
+      <div class="settlement-empty">Awaiting atomic settlement...</div>
+
+      <div class="volume-section">
+        <div class="volume-label">Cumulative Volume</div>
+        <div class="volume-amount" id="cumulativeVolume">0.00 USDC</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────
+let logCount      = 0;
+let jobCount      = 0;
+let totalVolume   = 0;
+let cumulativeVol = 0;
+let logQueue      = [];
+let isProcessing  = false;
+
+// ── SSE ────────────────────────────────────────────
+const evt = new EventSource("/events");
+
+evt.onopen = () => {
+  document.getElementById("liveDot").classList.add("on");
+  document.getElementById("liveText").textContent = "Live";
+};
+
+evt.onerror = () => {
+  document.getElementById("liveDot").classList.remove("on");
+  document.getElementById("liveText").textContent = "Reconnecting...";
+};
+
+evt.onmessage = e => {
+  try {
+    const log = JSON.parse(e.data);
+    logQueue.push(log);
+    processQueue();
+  } catch {}
+};
+
+// ── QUEUE PROCESSOR — one log at a time with delay ──
+async function processQueue() {
+  if (isProcessing) return;
+  isProcessing = true;
+
+  while (logQueue.length > 0) {
+    const log = logQueue.shift();
+    handleLog(log);
+    // Delay between logs so judges can read each line
+    await sleep(350);
+  }
+
+  isProcessing = false;
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+// ── HANDLE LOG ─────────────────────────────────────
+function handleLog(log) {
+  appendLog(log);
+  updateAgents(log);
+  updateTicker(log);
+
+  if (log.traceId) {
+    document.getElementById("traceDisplay").textContent =
+      `TRACE: ${log.traceId.slice(0, 18)}...`;
+  }
+
+  if (log.type === "system") {
+    jobCount++;
+    document.getElementById("jobCount").textContent = jobCount;
+    document.getElementById("systemStatus").textContent = "RUNNING";
+    document.getElementById("systemStatus").style.color = "var(--warn)";
+    resetSettlement();
+    resetAgents();
+    totalVolume = 0;
+  }
+
+  if (log.type === "payout") addPayout(log);
+  if (log.type === "success" && log.status === "complete") onSettled();
+}
+
+// ── APPEND LOG ─────────────────────────────────────
+function appendLog(log) {
+  const body = document.getElementById("logBody");
+  const el   = document.createElement("div");
+  el.className = `log-entry ${log.type || "system"}`;
+
+  const time = new Date(log.timestamp || Date.now())
+    .toLocaleTimeString("en", { hour12: false });
+
+  el.innerHTML = `
+    <span class="log-time">${time}</span>
+    <span class="log-msg">${esc(log.message || log.status || "")}</span>
+  `;
+
+  body.appendChild(el);
+
+  // Auto scroll
+  body.scrollTop = body.scrollHeight;
+
+  logCount++;
+  document.getElementById("logCount").textContent = logCount;
+}
+
+// ── UPDATE AGENTS ──────────────────────────────────
+function updateAgents(log) {
+  if (!log.agent) return;
+
+  const { agent, status, type } = log;
+
+  if (agent === "pm") {
+    if (status === "init" || status === "hiring") {
+      setAgent("pm", "active", "Orchestrating...");
+    }
+    if (status === "complete" || status === "settled") {
+      setAgent("pm", "done", "Settled ✓");
+    }
+  }
+
+  if (agent === "research") {
+    if (status === "executing" || status === "fetching") {
+      setAgent("research", "active", "Fetching data...");
+    }
+    if (status === "signed" || status === "done") {
+      setAgent("research", "done", "Done ✓");
+      document.getElementById("proof-1").classList.add("verified");
+      document.getElementById("proof-1").textContent = "🔒 verified";
+    }
+    if (status === "hiring") {
+      setAgent("research", "done", "Hiring Compute...");
+    }
+  }
+
+  if (agent === "compute") {
+    if (status === "executing" || status === "analyzed") {
+      setAgent("compute", "active", "Analyzing...");
+    }
+    if (status === "done" || status === "signed") {
+      setAgent("compute", "done", "Done ✓");
+      document.getElementById("proof-2").classList.add("verified");
+      document.getElementById("proof-2").textContent = "🔒 verified";
+    }
+    if (status === "hiring") {
+      setAgent("compute", "done", "Hiring Report...");
+    }
+  }
+
+  if (agent === "report") {
+    if (status === "executing") {
+      setAgent("report", "active", "Generating...");
+    }
+    if (status === "done") {
+      setAgent("report", "done", "Done ✓");
+      document.getElementById("proof-3").classList.add("verified");
+      document.getElementById("proof-3").textContent = "🔒 verified";
+    }
+  }
+}
+
+function setAgent(name, state, text) {
+  const card   = document.getElementById(`card-${name}`);
+  const status = document.getElementById(`status-${name}`);
+  if (!card || !status) return;
+
+  // Remove active/done classes but keep color class
+  card.classList.remove("active", "done");
+  if (state) card.classList.add(state);
+  status.textContent = text;
+}
+
+function resetAgents() {
+  ["pm","research","compute","report"].forEach(n => setAgent(n, "", "Idle"));
+  ["proof-1","proof-2","proof-3"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.remove("verified");
+      el.textContent = "│";
+    }
+  });
+}
+
+// ── UPDATE TICKER ──────────────────────────────────
+function updateTicker(log) {
+  if (log.type !== "agent" || log.agent !== "research") return;
+  if (!log.message || !log.message.includes("BTC")) return;
+
+  // Parse: "[RESEARCH] BTC $70716 | ETH $2191.24 | XLM $0.150956"
+  const btcMatch = log.message.match(/BTC \$([0-9.]+)/);
+  const ethMatch = log.message.match(/ETH \$([0-9.]+)/);
+  const xlmMatch = log.message.match(/XLM \$([0-9.]+)/);
+
+  if (btcMatch) document.getElementById("btcPrice").textContent = `$${Number(btcMatch[1]).toLocaleString()}`;
+  if (ethMatch) document.getElementById("ethPrice").textContent = `$${Number(ethMatch[1]).toLocaleString()}`;
+  if (xlmMatch) document.getElementById("xlmPrice").textContent = `$${Number(xlmMatch[1])}`;
+}
+
+// ── PAYOUT ─────────────────────────────────────────
+function addPayout(log) {
+  const body = document.getElementById("settlementBody");
+
+  // Remove empty state
+  const empty = body.querySelector(".settlement-empty");
+  if (empty) empty.remove();
+
+  // Remove volume section temporarily
+  const vol = body.querySelector(".volume-section");
+  if (vol) vol.remove();
+
+  // Remove old total
+  const oldTotal = body.querySelector(".total-card");
+  if (oldTotal) oldTotal.remove();
+
+  const names = {
+    RESEARCH_WALLET_ADDRESS: "Research Agent",
+    COMPUTE_WALLET_ADDRESS:  "Compute Agent",
+    REPORT_WALLET_ADDRESS:   "Report Agent",
+    PM_WALLET_ADDRESS:       "PM Agent",
+    research: "Research Agent",
+    compute:  "Compute Agent",
+    report:   "Report Agent",
+    pm:       "PM Agent",
+  };
+
+  const card = document.createElement("div");
+  card.className = "payout-card";
+  card.innerHTML = `
+    <span class="payout-name">${names[log.agent] || log.agent}</span>
+    <span class="payout-amount">${Number(log.amount).toFixed(2)} USDC</span>
+  `;
+  body.appendChild(card);
+
+  totalVolume   += Number(log.amount);
+  cumulativeVol += Number(log.amount);
+
+  // Add total row
+  const total = document.createElement("div");
+  total.className = "total-card";
+  total.innerHTML = `
+    <span class="total-label">TOTAL SETTLED</span>
+    <span class="total-amount">${totalVolume.toFixed(2)} USDC</span>
+  `;
+  body.appendChild(total);
+
+  // Add volume section back
+  const volSection = document.createElement("div");
+  volSection.className = "volume-section";
+  volSection.innerHTML = `
+    <div class="volume-label">Cumulative Volume</div>
+    <div class="volume-amount">${cumulativeVol.toFixed(2)} USDC</div>
+  `;
+  body.appendChild(volSection);
+
+  // Update header
+  document.getElementById("totalVolume").textContent = `${cumulativeVol.toFixed(2)} USDC`;
+}
+
+// ── SETTLED ────────────────────────────────────────
+function onSettled() {
+  setAgent("pm", "done", "Settled ✓");
+  document.getElementById("systemStatus").textContent = "SETTLED ✓";
+  document.getElementById("systemStatus").style.color = "var(--accent)";
+
+  // Screen flash
+  document.body.classList.add("flash");
+  setTimeout(() => document.body.classList.remove("flash"), 800);
+}
+
+// ── RESET SETTLEMENT ───────────────────────────────
+function resetSettlement() {
+  const body = document.getElementById("settlementBody");
+  body.innerHTML = `
+    <div class="settlement-empty">Awaiting atomic settlement...</div>
+    <div class="volume-section">
+      <div class="volume-label">Cumulative Volume</div>
+      <div class="volume-amount">${cumulativeVol.toFixed(2)} USDC</div>
+    </div>
+  `;
+}
+
+// ── ESC HTML ───────────────────────────────────────
+function esc(str) {
+  return String(str)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+}
+</script>
+</body>
+</html>
